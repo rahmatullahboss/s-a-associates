@@ -58,7 +58,7 @@ const settingsSchema = z.object({
 
 // Utility to get current settings
 async function getSiteSettings(dbClient: ReturnType<typeof db>) {
-  let [row] = await dbClient.select().from(siteSettings).where(eq(siteSettings.id, 1));
+  const [row] = await dbClient.select().from(siteSettings).where(eq(siteSettings.id, 1));
   if (!row) {
     // Basic defaults if empty
     return {}; 
@@ -154,7 +154,7 @@ settingsRouter.post('/upload-asset', async (c) => {
 
     // Optional: automatically update the DB for ceo photo like the original action did
     if (type === 'ceo') {
-      const current = await getSiteSettings(db(c.env.DB)) as any;
+      const current = await getSiteSettings(db(c.env.DB)) as typeof siteSettings.$inferSelect;
       const currentCeoProfile = current.ceoProfile || {};
       
       await db(c.env.DB).update(siteSettings).set({

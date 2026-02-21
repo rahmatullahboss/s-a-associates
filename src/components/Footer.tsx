@@ -15,11 +15,11 @@ export default function Footer() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link to="/" className="flex flex-col items-center gap-3">
-            <div className="relative w-16 h-16">
+            <div className="bg-[#1E293B] rounded-xl p-2 w-12 h-12 flex items-center justify-center overflow-hidden">
                  <img 
-                  src={settings.companyLogo || "/logo.jpg"} 
+                  src={settings.companyLogo || "/sa-logo.png"} 
                   alt={settings.companyName} 
-                  className="object-contain"
+                  className="object-contain w-full h-full scale-[2.5]"
                 />
             </div>
             <span className="font-bold text-xl text-gray-900 dark:text-white tracking-tight">

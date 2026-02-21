@@ -8,6 +8,7 @@ import {
   Calendar,
   Settings,
   FileText,
+  FolderOpen,
   LogOut,
   X,
   Menu,
@@ -23,9 +24,10 @@ interface SidebarProps {
 
 const adminLinks = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Users, label: 'Leads', href: '/dashboard/leads' },
+  { icon: Users, label: 'Students', href: '/dashboard/students' },
+  { icon: FileText, label: 'Leads', href: '/dashboard/leads' },
   { icon: Calendar, label: 'Bookings', href: '/dashboard/bookings' },
-  { icon: FileText, label: 'Documents', href: '/dashboard/documents' },
+  { icon: FolderOpen, label: 'Documents', href: '/dashboard/documents' },
   { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
 ];
 
@@ -53,18 +55,18 @@ export function Sidebar({ role, userName, isOpen, onClose }: SidebarProps) {
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-6 border-b border-white/10">
+    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex flex-col gap-2 h-full">
+      {/* Logo */}
+      <div className="mb-2 flex flex-col items-center gap-2 pb-4 border-b border-gray-100 dark:border-gray-700">
         <Link to="/">
-          <div className="bg-secondary text-[#1E293B] px-4 py-2 rounded-lg font-bold text-center shadow-sm hover:opacity-90 transition-opacity cursor-pointer">
-            S&A Associates
+          <div className="bg-[#1E293B] rounded-xl p-2 w-12 h-12 flex items-center justify-center overflow-hidden">
+            <img src="/sa-logo.png" alt="S&A Associates" className="object-contain w-full h-full scale-[2.5]" />
           </div>
         </Link>
         {userName && (
-          <div className="mt-4 text-center">
-            <p className="text-white font-medium truncate">{userName}</p>
-            <span className="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-secondary/20 text-secondary capitalize">
+          <div className="text-center">
+            <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{userName}</p>
+            <span className="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-secondary/10 text-gray-900 capitalize">
               {role}
             </span>
           </div>
@@ -72,37 +74,35 @@ export function Sidebar({ role, userName, isOpen, onClose }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <ul className="space-y-2">
-          {links.map((link) => {
-            const active = isActive(link.href);
-            return (
-              <li key={link.href}>
-                <Link to={link.href}
-                  onClick={onClose}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    active
-                      ? 'bg-secondary text-[#1E293B] shadow-md'
-                      : 'text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <link.icon size={20} />
-                  <span>{link.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="space-y-1 flex-1">
+        {links.map((link) => {
+          const active = isActive(link.href);
+          return (
+            <Link
+              key={link.href}
+              to={link.href}
+              onClick={onClose}
+              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${
+                active
+                  ? 'bg-secondary/10 text-gray-900 border-l-4 border-secondary'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 group'
+              }`}
+            >
+              <link.icon size={20} className={active ? 'text-gray-900' : 'group-hover:text-gray-900 transition-colors'} />
+              {link.label}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-white/10">
+      <div className="pt-4 border-t border-gray-100 dark:border-gray-700 mt-2">
         <button
           onClick={handleLogout}
-          className="flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-white/10 rounded-lg w-full transition-colors"
+          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all w-full"
         >
           <LogOut size={20} />
-          <span>Logout</span>
+          Logout
         </button>
       </div>
     </div>
@@ -111,25 +111,19 @@ export function Sidebar({ role, userName, isOpen, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="fixed left-0 top-0 h-screen w-64 bg-[#1E293B] z-40 hidden lg:block">
-        {sidebarContent}
+      <aside className="fixed left-0 top-0 h-screen w-64 z-40 hidden lg:block bg-gray-100 dark:bg-gray-950 p-4">
+        <div className="sticky top-4 h-[calc(100vh-2rem)]">
+          {sidebarContent}
+        </div>
       </aside>
 
       {/* Mobile Overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50"
-            onClick={onClose}
-          />
-          {/* Slide-in Sidebar */}
-          <aside className="fixed left-0 top-0 h-screen w-64 bg-[#1E293B] z-50 transform transition-transform duration-300 ease-in-out translate-x-0">
-            <div className="absolute top-4 right-4">
-              <button
-                onClick={onClose}
-                className="p-1 text-white/70 hover:text-white rounded-lg hover:bg-white/10"
-              >
+          <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+          <aside className="fixed left-0 top-0 h-screen w-72 bg-gray-100 dark:bg-gray-950 z-50 p-4 overflow-y-auto">
+            <div className="flex justify-end mb-2">
+              <button onClick={onClose} className="p-1 text-gray-500 hover:text-gray-800 rounded-lg">
                 <X size={20} />
               </button>
             </div>

@@ -8,6 +8,13 @@
       "when": 1771547740523,
       "tag": "0000_tricky_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1740132246000,
+      "tag": "0001_booking_slot_unique_index",
+      "breakpoints": true
     }
   ]
 }

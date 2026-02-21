@@ -1,19 +1,14 @@
 'use client';
 
 import { 
-  LayoutDashboard, 
   FileText, 
   FolderOpen, 
-  MessageSquare, 
-  Settings, 
-  Headphones, 
-  Calendar, 
   Upload, 
   Plus, 
   Check, 
   Gavel, 
   Plane, 
-  Info
+  Info,
 } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
@@ -21,7 +16,6 @@ import { useState, useEffect } from 'react';
 import { getProfile } from '@/actions/profile';
 import { apiFetch } from '@/lib/api';
 
-// Dummy data for now, replace with real data fetching later
 export default function MainStudentDashboard() {
   const [user, setUser] = useState<{name: string, id: string} | null>(null);
   const [stats, setStats] = useState<{documents: number, applied: number, applications?: {id: number, university: string, course: string, status: string, date: string}[]}>({ documents: 0, applied: 0 });
@@ -55,66 +49,10 @@ export default function MainStudentDashboard() {
     loadDashboardData();
   }, []);
 
-  if (loading) return <div className="p-8 text-center flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  if (loading) return <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 h-full">
-      {/* Sidebar - Replaces ApplicationProgressSidebar for this view */}
-      <aside className="w-full lg:w-64 flex-shrink-0 space-y-6">
-        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sticky top-28">
-          <nav className="space-y-1">
-            <Link to="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all bg-violet-50 dark:bg-violet-900/10 text-primary border-l-4 border-primary">
-              <LayoutDashboard size={20} />
-              Dashboard
-            </Link>
-            {['Applications', 'Document Vault', 'Messages', 'Settings'].map((item) => (
-              <Link 
-                key={item} 
-                to="#" 
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all group"
-              >
-                {item === 'Applications' && <FileText size={20} className="group-hover:text-primary transition-colors" />}
-                {item === 'Document Vault' && <FolderOpen size={20} className="group-hover:text-primary transition-colors" />}
-                {item === 'Messages' && (
-                    <>
-                        <MessageSquare size={20} className="group-hover:text-primary transition-colors" />
-                        <span className="ml-auto bg-primary/10 text-primary py-0.5 px-2 rounded-full text-xs font-bold">2</span>
-                    </>
-                )}
-                {item === 'Settings' && <Settings size={20} className="group-hover:text-primary transition-colors" />}
-                {item !== 'Messages' ? item : 'Messages'}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 px-4">
-            <div className="bg-gradient-to-br from-secondary to-indigo-900 rounded-2xl p-5 text-white relative overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-xl -translate-y-1/2 translate-x-1/2 group-hover:bg-white/20 transition-colors"></div>
-              <div className="relative z-10 flex items-start justify-between mb-4">
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <Headphones size={20} />
-                </div>
-                <span className="bg-green-500/20 text-green-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-500/30 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> ONLINE
-                </span>
-              </div>
-              <h4 className="font-bold text-white relative z-10">Your Counselor</h4>
-              <p className="text-xs text-indigo-200 mb-4 relative z-10">Sarah Jenkins is assigned to your profile.</p>
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <a href="mailto:sarah@tawakkul.com" className="flex items-center justify-center gap-2 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-xl transition-colors">
-                    <Calendar size={16} /> Meet
-                  </a>
-                  <Link to="/dashboard/messages" className="flex items-center justify-center gap-2 py-2 bg-accent hover:bg-teal-500 text-white text-sm font-medium rounded-xl transition-colors shadow-lg shadow-accent/20">
-                    <MessageSquare size={16} /> Chat
-                  </Link>
-                </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 space-y-8">
+    <div className="space-y-8">
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="font-display font-bold text-3xl text-secondary dark:text-white">Welcome back, {user?.name.split(' ')[0]}</h1>
@@ -238,7 +176,6 @@ export default function MainStudentDashboard() {
             {/* Removed Promo Card */}
           </div>
         </div>
-      </div>
     </div>
   );
 }

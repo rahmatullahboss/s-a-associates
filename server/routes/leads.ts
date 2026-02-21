@@ -4,6 +4,7 @@ import { db } from '../db/client.js';
 import { leads, users, bookings } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { getCookie } from 'hono/cookie';
 
 const leadSchema = z.object({
   name: z.string().min(1).max(256),
@@ -92,23 +93,77 @@ leadsRouter.post('/book', zValidator('json', bookingSchema), async (c) => {
       return c.json({ error: 'This time slot is already booked. Please choose another.' }, 400);
     }
 
-    // Insert booking
-    const [booking] = await db(c.env.DB).insert(bookings).values({
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      date: bookingDate,
-      timeSlot: data.timeSlot,
-      source: 'homepage',
-      status: 'pending',
-      timezone: 'Asia/Dhaka',
-      createdAt: new Date(),
-    }).returning({ id: bookings.id });
+    // Detect logged in user from session cookie
+    let studentUserId: number | null = null;
+    const sessionToken = getCookie(c, 'session_token');
+    if (sessionToken) {
+      const userId = parseInt(sessionToken, 10);
+      if (!isNaN(userId)) {
+        const user = await db(c.env.DB).query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (user && user.role === 'student') {
+          studentUserId = user.id;
+        }
+      }
+    }
 
-    return c.json({ success: true, bookingId: booking.id });
+    // If no session, try to find user by email
+    if (!studentUserId && data.email) {
+      const user = await db(c.env.DB).query.users.findFirst({
+        where: eq(users.email, data.email),
+      });
+      if (user && user.role === 'student') {
+        studentUserId = user.id;
+      }
+    }
+
+    // Insert booking — the DB unique index on (date, timeSlot) is the
+    // authoritative guard against double-booking race conditions.
+    try {
+      const [booking] = await db(c.env.DB).insert(bookings).values({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        date: bookingDate,
+        timeSlot: data.timeSlot,
+        source: 'homepage',
+        status: 'pending',
+        timezone: 'Asia/Dhaka',
+        studentUserId: studentUserId ?? undefined,
+        createdAt: new Date(),
+      }).returning({ id: bookings.id });
+
+      return c.json({ success: true, bookingId: booking.id });
+    } catch (insertError: unknown) {
+      // Catch UNIQUE constraint violation from concurrent bookings
+      const msg = insertError instanceof Error ? insertError.message : String(insertError);
+      if (msg.includes('UNIQUE constraint failed') || msg.includes('SQLITE_CONSTRAINT')) {
+        return c.json({ error: 'This time slot is already booked. Please choose another.' }, 400);
+      }
+      throw insertError;
+    }
   } catch (error) {
     console.error("Failed to submit booking:", error);
     return c.json({ error: "Failed to book consultation" }, 500);
+  }
+});
+
+// GET /api/leads/booked-slots?date=YYYY-MM-DD
+leadsRouter.get('/booked-slots', async (c) => {
+  try {
+    const date = c.req.query('date');
+    if (!date) return c.json({ slots: [] });
+
+    const bookedSlots = await db(c.env.DB)
+      .select({ timeSlot: bookings.timeSlot })
+      .from(bookings)
+      .where(eq(bookings.date, date));
+
+    return c.json({ slots: bookedSlots.map(b => b.timeSlot) });
+  } catch (error) {
+    console.error("Failed to fetch booked slots:", error);
+    return c.json({ slots: [] });
   }
 });
 

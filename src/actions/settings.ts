@@ -18,7 +18,8 @@ export async function saveSiteSettingsAction(settings: SiteSettings) {
 
 export async function uploadCeoPhotoAction(fd: FormData) {
   try {
-    const res = await fetch(`${API_BASE}/api/settings/ceo-photo`, {
+    fd.append('type', 'ceo');
+    const res = await fetch(`${API_BASE}/api/settings/upload-asset`, {
       method: 'POST',
       credentials: 'include',
       body: fd,
@@ -33,7 +34,8 @@ export async function uploadCeoPhotoAction(fd: FormData) {
 
 export async function uploadUniversityLogoAction(fd: FormData) {
   try {
-    const res = await fetch(`${API_BASE}/api/settings/university-logo`, {
+    fd.append('type', 'university');
+    const res = await fetch(`${API_BASE}/api/settings/upload-asset`, {
       method: 'POST',
       credentials: 'include',
       body: fd,

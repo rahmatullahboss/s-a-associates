@@ -20,7 +20,7 @@ export function HeroSection() {
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent w-fit mb-8 border border-accent/20"
           >
             <CheckCircle className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">100% Free Counseling</span>
+            <span className="text-xs font-bold uppercase tracking-wider">100% Free Counseling & Application Processing</span>
           </motion.div>
 
           {/* Headline */}

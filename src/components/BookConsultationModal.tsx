@@ -26,7 +26,13 @@ const timeSlots = [
   "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"
 ];
 
-export function BookConsultationModal({ children }: { children?: React.ReactNode }) {
+interface UserInfo {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+export function BookConsultationModal({ children, prefillUser }: { children?: React.ReactNode; prefillUser?: UserInfo }) {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'date' | 'form' | 'success'>('date');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -34,12 +40,21 @@ export function BookConsultationModal({ children }: { children?: React.ReactNode
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [meetLink, setMeetLink] = useState<string | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 
   const dates = getAvailableDates();
 
-  const handleDateSelect = (date: Date) => {
+  const handleDateSelect = async (date: Date) => {
     setSelectedDate(date);
     setSelectedTime(null);
+    // Fetch booked slots for this date
+    try {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const res = await apiFetch<{ slots: string[] }>(`/api/leads/booked-slots?date=${dateStr}`);
+      setBookedSlots(res.slots || []);
+    } catch {
+      setBookedSlots([]);
+    }
   };
 
   const handleTimeSelect = (time: string) => {
@@ -150,20 +165,27 @@ export function BookConsultationModal({ children }: { children?: React.ReactNode
                   <Clock className="w-4 h-4" /> Select Time
                 </Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {timeSlots.map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => handleTimeSelect(time)}
-                      className={cn(
-                        "p-2 text-sm rounded-lg border transition-all hover:border-[#F26522]",
-                        selectedTime === time
-                          ? "bg-[#1E293B] text-white border-[#1E293B]"
-                          : "bg-white text-gray-700 border-gray-200 hover:bg-[#F26522]/5"
-                      )}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                  {timeSlots.map((time) => {
+                    const isBooked = bookedSlots.includes(time);
+                    return (
+                      <button
+                        key={time}
+                        onClick={() => !isBooked && handleTimeSelect(time)}
+                        disabled={isBooked}
+                        className={cn(
+                          "p-2 text-sm rounded-lg border transition-all",
+                          isBooked
+                            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through"
+                            : selectedTime === time
+                            ? "bg-[#1E293B] text-white border-[#1E293B]"
+                            : "bg-white text-gray-700 border-gray-200 hover:border-[#F26522] hover:bg-[#F26522]/5"
+                        )}
+                      >
+                        {time}
+                        {isBooked && <span className="block text-[10px]">Booked</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -186,17 +208,17 @@ export function BookConsultationModal({ children }: { children?: React.ReactNode
 
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" name="name" required placeholder="John Doe" />
+              <Input id="name" name="name" required placeholder="John Doe" defaultValue={prefillUser?.name || ''} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required placeholder="john@example.com" />
+              <Input id="email" name="email" type="email" required placeholder="john@example.com" defaultValue={prefillUser?.email || ''} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" name="phone" type="tel" required placeholder="e.g. +8801XXXXXXXXX" />
+              <Input id="phone" name="phone" type="tel" required placeholder="e.g. +8801XXXXXXXXX" defaultValue={prefillUser?.phone || ''} />
             </div>
 
             {error && (

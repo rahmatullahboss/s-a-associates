@@ -105,7 +105,7 @@ export default function StudentAssessmentForm() {
     return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div>;
   }
 
-  const inputClass = "w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary placeholder:text-gray-400 dark:placeholder:text-gray-500 py-3 px-4 transition-colors";
+  const inputClass = "w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-secondary dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary placeholder:text-gray-400 dark:placeholder:text-gray-500 py-3 px-4 transition-colors";
   const labelClass = "text-sm font-medium text-gray-700 dark:text-gray-300";
 
   return (
@@ -226,7 +226,7 @@ export default function StudentAssessmentForm() {
                       <FileText size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{file.name}</p>
+                      <p className="text-sm font-medium text-secondary dark:text-gray-100 truncate">{file.name}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                     {uploadSuccess ? (

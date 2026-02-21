@@ -27,16 +27,18 @@ export default function DashboardLayout() {
   }, [navigate]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardLayoutClient user={{ name: user.name, role: user.role }}>
-        <Outlet />
-      </DashboardLayoutClient>
-    </div>
+    <DashboardLayoutClient user={{ name: user.name, role: user.role }}>
+      <Outlet />
+    </DashboardLayoutClient>
   );
 }

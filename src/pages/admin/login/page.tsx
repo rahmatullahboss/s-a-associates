@@ -79,7 +79,7 @@ export default function AdminLoginPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-secondary shadow-lg shadow-primary/20">
-              <span className="font-bold text-xl">SA</span>
+              <img src="/sa-logo.png" alt="S&A Associates" className="h-10 object-contain" />
             </div>
             <div>
               <span className="text-primary font-bold text-xl block font-display">S&A Associates</span>

@@ -40,18 +40,16 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="student-theme min-h-screen bg-gray-100 dark:bg-gray-950 font-sans">
-      <main className="py-6 sm:py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        {profileComplete ? (
-            <MainStudentDashboard />
-        ) : (
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 justify-center">
-               <div className="flex-1 max-w-4xl">
-                 <StudentAssessmentForm />
-               </div>
-            </div>
-        )}
-      </main>
-    </div>
+    <>
+      {profileComplete ? (
+        <MainStudentDashboard />
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 justify-center">
+          <div className="flex-1 max-w-4xl">
+            <StudentAssessmentForm />
+          </div>
+        </div>
+      )}
+    </>
   );
 }

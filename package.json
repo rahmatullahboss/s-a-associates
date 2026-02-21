@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n \"server,client\" -c \"yellow,cyan\" \"wrangler dev server/index.ts\" \"vite\"",
     "dev:server": "wrangler dev server/index.ts",
+    "dev:client": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && npx wrangler deploy --minify server/index.ts",
+    "deploy": "npm run build && wrangler deploy",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply DB --local"
   },
@@ -44,6 +45,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.9",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

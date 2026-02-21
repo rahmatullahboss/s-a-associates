@@ -76,19 +76,7 @@ export function DocumentUploadModal({ children }: { children: React.ReactNode })
           </div>
           <div className="grid gap-2">
             <Label htmlFor="type">Document Type</Label>
-            <div className="relative">
-              <select 
-                name="type" 
-                required
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
-              >
-                <option value="" disabled selected>Select type</option>
-                <option value="SSC Result">SSC Result</option>
-                <option value="HSC Result">HSC Result</option>
-                <option value="Transcript">Transcript</option>
-                <option value="BSc Result">BSc Result</option>
-              </select>
-            </div>
+            <Input id="type" name="type" required placeholder="e.g. Passport, Transcript, Certificate..." />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="file">File (PDF or Image)</Label>

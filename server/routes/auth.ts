@@ -1,33 +1,51 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { setCookie, deleteCookie, getCookie } from 'hono/cookie';
-import { db } from '../db/client.js'; // We'll need to create this client
+import type { Context } from 'hono';
+import { db } from '../db/client.js';
 import { users, studentProfiles } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { loginSchema, signupSchema } from '../schemas/auth'; // Importing existing schemas
+import { loginSchema, signupSchema } from '../schemas/auth';
 import { hashPassword, verifyPassword, isPasswordHash } from '../lib/password.js';
+import { createSessionToken, verifySessionToken } from '../lib/session.js';
+import { checkAndIncrementRateLimit, clearRateLimit } from '../lib/rate-limit.js';
 
 type Bindings = {
   DB: D1Database;
+  SESSION_SECRET: string;
 };
 
 const auth = new Hono<{ Bindings: Bindings }>();
 
-// Helper to set session (placeholder for now, will implement JWT)
-const setSession = async (c: any, userId: number) => {
-  // In a real app, sign a JWT and set it
-  setCookie(c, 'session_token', userId.toString(), {
+// Helper to set a signed, HttpOnly session cookie
+const setSession = async (c: Context<{ Bindings: Bindings }>, userId: number) => {
+  const secret = c.env.SESSION_SECRET;
+  const token = await createSessionToken(userId, secret);
+  const isLocal = c.req.url.includes('localhost') || c.req.url.includes('127.0.0.1');
+  setCookie(c, 'session_token', token, {
     httpOnly: true,
-    secure: true, // Must be true for SameSite=None
-    sameSite: 'None', // Required for cross-domain Pages <-> Workers
+    secure: !isLocal,
+    sameSite: isLocal ? 'Lax' : 'None',
     path: '/',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   });
 };
 
+// POST /api/auth/login
 auth.post('/login', zValidator('json', loginSchema), async (c) => {
   const { email, password } = c.req.valid('json');
   const loginAs = c.req.query('loginAs') ?? 'student';
+
+  // Rate limiting: max 10 attempts per 15-minute window per email
+  const rlKey = `login:${email.toLowerCase()}`;
+  const rl = await checkAndIncrementRateLimit(db(c.env.DB), rlKey, 10, 15 * 60);
+  if (rl.limited) {
+    return c.json(
+      { error: 'Too many login attempts. Please try again later.' },
+      429,
+      { 'Retry-After': String(rl.retryAfter ?? 900) },
+    );
+  }
 
   try {
     const user = await db(c.env.DB).query.users.findFirst({
@@ -63,6 +81,9 @@ auth.post('/login', zValidator('json', loginSchema), async (c) => {
       return c.json({ error: 'Please use the admin login for this account.' }, 403);
     }
 
+    // Clear rate limit on successful login
+    await clearRateLimit(db(c.env.DB), rlKey);
+
     await setSession(c, user.id);
     return c.json({ success: true, user: { id: user.id, name: user.name, role: user.role } });
   } catch (error) {
@@ -71,6 +92,7 @@ auth.post('/login', zValidator('json', loginSchema), async (c) => {
   }
 });
 
+// POST /api/auth/signup
 auth.post('/signup', zValidator('json', signupSchema), async (c) => {
   const { name, email, password, phone } = c.req.valid('json');
 
@@ -86,60 +108,60 @@ auth.post('/signup', zValidator('json', signupSchema), async (c) => {
     const hashedPassword = await hashPassword(password);
 
     const [newUser] = await db(c.env.DB).insert(users).values({
-        name,
-        email,
-        password: hashedPassword,
-        role: 'student',
+      name,
+      email,
+      password: hashedPassword,
+      role: 'student',
     }).returning({ id: users.id });
 
     if (newUser) {
-        // Create student profile with phone number
-        await db(c.env.DB).insert(studentProfiles).values({
-            userId: newUser.id,
-            phone,
-            profileCompletion: 20 // Started with basic info
-        });
+      await db(c.env.DB).insert(studentProfiles).values({
+        userId: newUser.id,
+        phone,
+        profileCompletion: 20,
+      });
 
-        await setSession(c, newUser.id);
-        return c.json({ success: true, user: { id: newUser.id, name, role: 'student' } });
+      await setSession(c, newUser.id);
+      return c.json({ success: true, user: { id: newUser.id, name, role: 'student' } });
     }
-    
-    return c.json({ error: 'Failed to create user' }, 500);
 
+    return c.json({ error: 'Failed to create user' }, 500);
   } catch (error) {
     console.error('Signup error:', error);
     return c.json({ error: 'An error occurred during signup' }, 500);
   }
 });
 
+// POST /api/auth/logout
 auth.post('/logout', async (c) => {
   deleteCookie(c, 'session_token');
   return c.json({ success: true });
 });
 
+// GET /api/auth/me
 auth.get('/me', async (c) => {
   try {
-    const sessionTokenStr = getCookie(c, 'session_token');
-    
-    if (sessionTokenStr) {
-       const userId = parseInt(sessionTokenStr, 10);
-       if (!isNaN(userId)) {
-          const user = await db(c.env.DB).query.users.findFirst({
-             where: eq(users.id, userId),
-          });
+    const token = getCookie(c, 'session_token');
 
-          if (user) {
-             return c.json({ 
-                 authenticated: true, 
-                 user: { id: user.id, name: user.name, role: user.role } 
-             });
-          }
-       }
+    if (token) {
+      const userId = await verifySessionToken(token, c.env.SESSION_SECRET);
+      if (userId !== null) {
+        const user = await db(c.env.DB).query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+
+        if (user) {
+          return c.json({
+            authenticated: true,
+            user: { id: user.id, name: user.name, role: user.role },
+          });
+        }
+      }
     }
-  } catch(error) {
+  } catch (error) {
     console.error('Session validation error:', error);
   }
-  
+
   return c.json({ authenticated: false });
 });
 

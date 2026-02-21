@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
+import { apiFetch } from '@/lib/api';
 import {
   Search,
   FileText,
@@ -133,15 +134,19 @@ export default function AdminDocumentReview({ students: initialStudents }: Props
     if (!reviewingDocId) return;
     startTransition(async () => {
       try {
+        await apiFetch(`/api/dashboard/documents/${reviewingDocId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ status, reviewNote }),
+        });
         setStudents((prev) =>
           prev.map((s) => {
             if (s.userId !== selectedStudentId) return s;
             const updatedDocs = s.documents.map((d) =>
-              d.id === reviewingDocId ? {                ...d, 
- 
-                status, 
-                reviewNote: reviewNote || null, 
-                reviewedAt: new Date().toISOString() 
+              d.id === reviewingDocId ? {
+                ...d,
+                status,
+                reviewNote: reviewNote || null,
+                reviewedAt: new Date().toISOString()
               } : d
             );
             return {

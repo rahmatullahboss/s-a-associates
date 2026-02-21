@@ -52,11 +52,11 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-20 transition-all duration-300">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-             <div className="relative w-12 h-12">
+             <div className="bg-[#1E293B] rounded-xl p-2 w-12 h-12 flex items-center justify-center overflow-hidden">
                      <img
-                    src={settings.companyLogo || "/logo.jpg"}
+                    src={settings.companyLogo || "/sa-logo.png"}
                     alt={settings.companyName}
-                    className="object-contain"
+                    className="object-contain w-full h-full scale-[2.5]"
                   />
              </div>
              <span className="font-bold text-xl text-primary dark:text-white tracking-tight">

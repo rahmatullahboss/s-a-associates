@@ -5,6 +5,7 @@ import { users, studentProfiles } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth.js';
+import { hashPassword, verifyPassword, isPasswordHash } from '../lib/password.js';
 
 const profileSchema = z.object({
   name: z.string().min(2).max(256),
@@ -85,9 +86,65 @@ profile.put('/', zValidator('json', profileSchema), async (c) => {
     }
 
     return c.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Profile update error:', error);
-    return c.json({ success: false, error: error.message }, 500);
+    return c.json({ success: false, error: error instanceof Error ? error.message : 'Failed to update profile.' }, 500);
+  }
+});
+
+const credentialsSchema = z.object({
+  currentPassword: z.string().min(1),
+  newEmail: z.string().email().optional(),
+  newPassword: z.string().min(8).optional(),
+});
+
+profile.put('/credentials', zValidator('json', credentialsSchema), async (c) => {
+  const user = c.get('user');
+  const { currentPassword, newEmail, newPassword } = c.req.valid('json');
+
+  // Verify current password
+  let valid = false;
+  if (isPasswordHash(user.password)) {
+    valid = await verifyPassword(currentPassword, user.password);
+  } else {
+    valid = user.password === currentPassword;
+  }
+
+  if (!valid) {
+    return c.json({ error: 'Current password is incorrect.' }, 401);
+  }
+
+  // Check at least one change requested
+  if (!newEmail && !newPassword) {
+    return c.json({ error: 'No changes provided.' }, 400);
+  }
+
+  try {
+    const updates: Partial<typeof users.$inferInsert> = {};
+
+    if (newEmail && newEmail !== user.email) {
+      // Check email not taken by another user
+      const existing = await db(c.env.DB).query.users.findFirst({
+        where: eq(users.email, newEmail),
+      });
+      if (existing) {
+        return c.json({ error: 'Email is already in use.' }, 400);
+      }
+      updates.email = newEmail;
+    }
+
+    if (newPassword) {
+      updates.password = await hashPassword(newPassword);
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await db(c.env.DB).update(users).set(updates).where(eq(users.id, user.id));
+    }
+
+    return c.json({ success: true });
+  } catch (error: unknown) {
+    console.error('Credentials update error:', error);
+    return c.json({ error: error instanceof Error ? error.message : 'Failed to update credentials.' }, 500);
   }
 });
 

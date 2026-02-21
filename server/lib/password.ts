@@ -75,8 +75,8 @@ export async function verifyPassword(password: string, storedValue: string): Pro
 
     const derivedBytes = await deriveHashNative(password, salt, iterations);
     return timingSafeEqual(derivedBytes, hash);
-  } catch (error: any) {
-    if (error.name === 'NotSupportedError' && iterations > 100000) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'NotSupportedError' && iterations > 100000) {
       console.warn(`Attempted to verify legacy ${iterations}k hash which exceeds Cloudflare Native limits. User must reset password.`);
       return false; // Authentication forcibly fails, necessitating password reset for old Django accounts
     }

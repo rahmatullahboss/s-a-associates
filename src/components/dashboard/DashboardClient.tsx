@@ -56,7 +56,7 @@ export default function DashboardClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+        <Loader2 className="w-8 h-8 animate-spin text-gray-900" />
       </div>
     );
   }
@@ -93,94 +93,80 @@ export default function DashboardClient() {
   }
 
   return (
-    <div>
-      {/* Top Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-30 border-b border-gray-100 hidden lg:block">
-        <div className="flex items-center justify-between px-8 py-4">
-          <h1 className="text-2xl font-bold text-[#1E293B] font-display">Dashboard</h1>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-[#1E293B] rounded-full flex items-center justify-center text-secondary font-semibold border border-white/20">
-              {data.userName?.charAt(0) || 'U'}
+    <div className="space-y-6">
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-r from-[#1E293B] to-[#334155] rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-10">
+          <GraduationCap size={120} />
+        </div>
+        <h2 className="text-2xl font-bold mb-1 font-display">
+          Welcome back{data.userName ? `, ${data.userName}` : ''}!
+        </h2>
+        <p className="text-white/80 text-sm">
+          Manage bookings, students, and leads from your dashboard.
+        </p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow"
+          >
+            <div className={`w-12 h-12 ${stat.color} rounded-2xl flex items-center justify-center mb-4`}>
+              <stat.icon size={24} />
             </div>
+            <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{stat.label}</p>
           </div>
-        </div>
-      </header>
+        ))}
+      </div>
 
-      <main className="p-8">
-        {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-[#1E293B] to-[#334155] rounded-2xl p-6 mb-8 text-white shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <GraduationCap size={120} />
-          </div>
-          <h2 className="text-2xl font-bold mb-2 font-display">
-            Welcome back{data.userName ? `, ${data.userName}` : ''}!
-          </h2>
-          <p className="text-white/80">
-            Manage bookings, students, and leads from your dashboard.
-          </p>
+      {/* Recent Bookings */}
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white font-display">
+            Recent Bookings
+          </h3>
+          <Link to="/dashboard/bookings" className="text-sm text-gray-900 hover:underline font-medium">
+            View All →
+          </Link>
         </div>
-
-        {/* Stats Grid */}
-        <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-            >
-              <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center mb-4`}>
-                <stat.icon size={24} />
-              </div>
-              <h3 className="text-3xl font-bold text-[#1E293B]">{stat.value}</h3>
-              <p className="text-gray-500">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Recent Bookings */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-xl font-bold text-[#1E293B] font-display">
-              Recent Bookings
-            </h3>
-            <Link to="/dashboard/bookings" className="text-sm text-secondary hover:underline">
-              View All
-            </Link>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Date</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Time</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Status</th>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Name</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Date</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Time</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.recentBookings.slice(0, 5).map((booking) => (
+                <tr key={booking.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{booking.name}</td>
+                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{booking.date}</td>
+                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{booking.timeSlot}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(booking.status || 'pending')}`}>
+                      {(booking.status || 'pending').replace('_', ' ')}
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.recentBookings.slice(0, 5).map((booking) => (
-                  <tr key={booking.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-[#1E293B]">{booking.name}</td>
-                    <td className="px-6 py-4 text-gray-500">{booking.date}</td>
-                    <td className="px-6 py-4 text-gray-500">{booking.timeSlot}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(booking.status || 'pending')}`}>
-                        {(booking.status || 'pending').replace('_', ' ')}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {data.recentBookings.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
-                      No bookings found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {data.recentBookings.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                    No bookings found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

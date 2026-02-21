@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),
@@ -51,7 +51,11 @@ export const bookings = sqliteTable('bookings', {
   requestedNewTimeSlot: text('requested_new_time_slot'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-});
+}, (table) => [
+  // Unique constraint ensures no two bookings share the same date+time slot.
+  // This is the DB-level guard against race conditions (TOCTOU check-then-insert).
+  uniqueIndex('bookings_date_timeslot_unique').on(table.date, table.timeSlot),
+]);
 
 export const bookingEvents = sqliteTable('booking_events', {
   id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),

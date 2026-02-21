@@ -33,35 +33,29 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 font-display text-[#1E293B]">My Profile</h1>
-          <p className="text-gray-500">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="p-8">
-        <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6 font-display text-[#1E293B]">My Profile</h1>
-            <p className="text-red-500">Failed to load profile. Please try refreshing the page.</p>
-        </div>
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center">
+        <p className="text-red-500">Failed to load profile. Please try refreshing the page.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2 font-display text-[#1E293B]">My Profile</h1>
-        <p className="text-gray-500 mb-8">Manage your personal information and study preferences.</p>
-        
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8">
-            <ProfileForm user={data.user} profile={data.profile} />
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-display font-bold text-3xl text-secondary dark:text-white">My Profile</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your personal information and study preferences.</p>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sm:p-8">
+        <ProfileForm user={data.user} profile={data.profile} />
       </div>
     </div>
   );
