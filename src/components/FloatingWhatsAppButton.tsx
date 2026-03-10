@@ -1,6 +1,7 @@
 "use client";
 
 import { useSiteSettings } from "@/lib/site-settings-context";
+import pixel from "@/lib/pixel";
 
 export default function FloatingWhatsAppButton() {
   const settings = useSiteSettings();
@@ -9,11 +10,20 @@ export default function FloatingWhatsAppButton() {
 
   if (!cleanNumber) return null;
 
+  const handleClick = () => {
+    // 🎯 Fire Contact event on WhatsApp click — client-side only (no PII)
+    pixel.track('Contact', {
+      content_name: 'WhatsApp',
+      content_category: 'Contact',
+    });
+  };
+
   return (
     <a
       href={`https://wa.me/${cleanNumber}`}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={handleClick}
       className="fixed bottom-6 right-6 z-40 bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:shadow-green-500/50 hover:scale-110 transition-all animate-bounce-slow flex items-center justify-center group"
     >
       <svg

@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { cache } from 'hono/cache';
+import { secureHeaders } from 'hono/secure-headers';
 import auth from './routes/auth.js';
 import profile from './routes/profile.js';
 import upload from './routes/upload.js';
@@ -7,6 +9,7 @@ import leads from './routes/leads.js';
 import settings from './routes/settings.js';
 import dashboard from './routes/dashboard.js';
 import applicationsRoute from './routes/applications.js';
+import track from './routes/track.js';
 
 type CloudflareBindings = {
   DB: D1Database;
@@ -23,6 +26,14 @@ const ALLOWED_ORIGINS = new Set([
   'https://www.s-a-associates.com',
   'https://s-a-associates-frontend.pages.dev',
 ]);
+
+// ── Security headers on all responses ────────────────────────────────────────
+app.use('*', secureHeaders());
+
+// ── Cache public GET /api/settings at the CF edge for 5 min ─────────────────
+// Settings rarely change — caching saves a D1 query on every page load.
+app.get('/api/settings', cache({ cacheName: 'site-settings', cacheControl: 'public, max-age=300, s-maxage=300' }));
+app.get('/api/site-settings', cache({ cacheName: 'site-settings', cacheControl: 'public, max-age=300, s-maxage=300' }));
 
 app.use('*', cors({
   origin: (origin) => {
@@ -51,5 +62,6 @@ app.route('/api/settings', settings);
 app.route('/api/site-settings', settings);
 app.route('/api/dashboard', dashboard);
 app.route('/api/applications', applicationsRoute);
+app.route('/api/track', track);
 
 export default app;

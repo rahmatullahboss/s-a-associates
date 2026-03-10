@@ -15,6 +15,34 @@
       "when": 1740132246000,
       "tag": "0001_booking_slot_unique_index",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771650360635,
+      "tag": "0002_rate_limits_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1771650500000,
+      "tag": "0003_availability_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1771650600000,
+      "tag": "0004_tracking_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1771650700000,
+      "tag": "0005_clarity_column",
+      "breakpoints": true
     }
   ]
 }

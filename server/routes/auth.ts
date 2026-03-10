@@ -9,10 +9,22 @@ import { loginSchema, signupSchema } from '../schemas/auth';
 import { hashPassword, verifyPassword, isPasswordHash } from '../lib/password.js';
 import { createSessionToken, verifySessionToken } from '../lib/session.js';
 import { checkAndIncrementRateLimit, clearRateLimit } from '../lib/rate-limit.js';
+import {
+  generateCodeVerifier,
+  generateCodeChallenge,
+  generateState,
+  exchangeCodeForTokens,
+  getGoogleUserInfo,
+  buildAuthorizationUrl,
+  parseGoogleError,
+} from '../lib/google.js';
 
 type Bindings = {
   DB: D1Database;
   SESSION_SECRET: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  GOOGLE_REDIRECT_URI: string;
 };
 
 const auth = new Hono<{ Bindings: Bindings }>();
@@ -96,6 +108,13 @@ auth.post('/login', zValidator('json', loginSchema), async (c) => {
 auth.post('/signup', zValidator('json', signupSchema), async (c) => {
   const { name, email, password, phone } = c.req.valid('json');
 
+  // #10 — Rate limit signups: 5 per hour per IP
+  const ip = c.req.header('CF-Connecting-IP') ?? c.req.header('X-Forwarded-For')?.split(',')[0].trim() ?? '0.0.0.0';
+  const rl = await checkAndIncrementRateLimit(db(c.env.DB), `signup:${ip}`, 5, 60 * 60);
+  if (rl.limited) {
+    return c.json({ error: 'Too many accounts created. Please try again later.' }, 429);
+  }
+
   try {
     const existingUser = await db(c.env.DB).query.users.findFirst({
       where: eq(users.email, email),
@@ -163,6 +182,168 @@ auth.get('/me', async (c) => {
   }
 
   return c.json({ authenticated: false });
+});
+
+// GET /api/auth/google - Initiates Google OAuth flow
+auth.get('/google', async (c) => {
+  try {
+    const clientId = c.env.GOOGLE_CLIENT_ID;
+    const clientSecret = c.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = c.env.GOOGLE_REDIRECT_URI;
+
+    // Check if Google OAuth is configured
+    if (!clientId || !clientSecret || !redirectUri) {
+      return c.json({ error: 'Google login is not configured' }, 503);
+    }
+
+    // Generate PKCE parameters
+    const codeVerifier = generateCodeVerifier();
+    const state = generateState();
+
+    // Generate code challenge from verifier
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+    // Store code verifier and state in signed cookies
+    const isLocal = c.req.url.includes('localhost') || c.req.url.includes('127.0.0.1');
+    
+    setCookie(c, 'google_code_verifier', codeVerifier, {
+      httpOnly: true,
+      secure: !isLocal,
+      sameSite: isLocal ? 'Lax' : 'None',
+      path: '/',
+      maxAge: 10 * 60, // 10 minutes - OAuth flow should be quick
+    });
+
+    setCookie(c, 'google_state', state, {
+      httpOnly: true,
+      secure: !isLocal,
+      sameSite: isLocal ? 'Lax' : 'None',
+      path: '/',
+      maxAge: 10 * 60,
+    });
+
+    // Build authorization URL and redirect
+    const authUrl = buildAuthorizationUrl(clientId, redirectUri, state, codeChallenge);
+    
+    return c.redirect(authUrl);
+  } catch (error) {
+    console.error('Google OAuth initiation error:', error);
+    return c.json({ error: 'Failed to initiate Google login' }, 500);
+  }
+});
+
+// GET /api/auth/google/callback - Handles Google OAuth callback
+auth.get('/google/callback', async (c) => {
+  try {
+    const { code, state, error, error_description } = c.req.query();
+
+    // Handle error from Google (user denied consent)
+    if (error) {
+      const oauthError = parseGoogleError(error, error_description);
+      console.log('Google OAuth error:', oauthError.message);
+      return c.redirect(`/student/login?error=${encodeURIComponent(oauthError.message)}`);
+    }
+
+    // Validate required params
+    if (!code || !state) {
+      return c.redirect('/student/login?error=Missing OAuth parameters');
+    }
+
+    // Get stored cookies
+    const storedState = getCookie(c, 'google_state');
+    const codeVerifier = getCookie(c, 'google_code_verifier');
+
+    // Clean up cookies
+    deleteCookie(c, 'google_state');
+    deleteCookie(c, 'google_code_verifier');
+
+    // Validate state (CSRF protection)
+    if (!storedState || storedState !== state) {
+      console.error('State mismatch - possible CSRF attack');
+      return c.redirect('/student/login?error=Invalid OAuth state');
+    }
+
+    // Validate code verifier exists
+    if (!codeVerifier) {
+      return c.redirect('/student/login?error=OAuth session expired');
+    }
+
+    // Exchange code for tokens
+    const clientId = c.env.GOOGLE_CLIENT_ID;
+    const clientSecret = c.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = c.env.GOOGLE_REDIRECT_URI;
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      return c.redirect('/student/login?error=Google login not configured');
+    }
+
+    const tokenResponse = await exchangeCodeForTokens(code, codeVerifier, clientId, clientSecret, redirectUri);
+
+    // Get user info from Google
+    const googleUser = await getGoogleUserInfo(tokenResponse.access_token);
+
+    // Find or create user
+    let user = await db(c.env.DB).query.users.findFirst({
+      where: eq(users.googleId, googleUser.id),
+    });
+
+    if (!user) {
+      // Check if user exists with same email (link account)
+      user = await db(c.env.DB).query.users.findFirst({
+        where: eq(users.email, googleUser.email),
+      });
+
+      if (user) {
+        // Link Google account to existing user
+        await db(c.env.DB)
+          .update(users)
+          .set({ googleId: googleUser.id })
+          .where(eq(users.id, user.id));
+      } else {
+        // Create new user
+        const name = googleUser.name || googleUser.email.split('@')[0] || 'User';
+        
+        const [newUser] = await db(c.env.DB)
+          .insert(users)
+          .values({
+            name,
+            email: googleUser.email,
+            password: await hashPassword(`google_${crypto.randomUUID()}`), // Random password for Google users
+            googleId: googleUser.id,
+            role: 'student',
+          })
+          .returning({ id: users.id });
+
+        // Create student profile
+        await db(c.env.DB).insert(studentProfiles).values({
+          userId: newUser.id,
+          profileCompletion: 20,
+        });
+
+        user = await db(c.env.DB).query.users.findFirst({
+          where: eq(users.id, newUser.id),
+        });
+      }
+    }
+
+    if (!user) {
+      return c.redirect('/student/login?error=Failed to create or link account');
+    }
+
+    // Ensure user is a student (not admin/agent)
+    if (user.role !== 'student') {
+      return c.redirect('/student/login?error=This account cannot log in as student');
+    }
+
+    // Set session
+    await setSession(c, user.id);
+
+    // Redirect to dashboard
+    return c.redirect('/dashboard');
+  } catch (err) {
+    console.error('Google OAuth callback error:', err);
+    return c.redirect('/student/login?error=Google login failed');
+  }
 });
 
 export default auth;

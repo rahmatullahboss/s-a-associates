@@ -5,6 +5,7 @@ export const users = sqliteTable('users', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
+  googleId: text('google_id').unique(),
   role: text('role').default('student'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
@@ -138,6 +139,16 @@ export const siteSettings = sqliteTable('site_settings', {
   countries: text('countries', { mode: 'json' }),
   defaultMeetLink: text('default_meet_link'),
   universityLogos: text('university_logos', { mode: 'json' }),
+  // Tracking & Analytics
+  facebookPixelId: text('facebook_pixel_id'),
+  metaAccessToken: text('meta_access_token'),
+  metaTestEventCode: text('meta_test_event_code'),
+  googleAnalyticsId: text('google_analytics_id'),
+  clarityProjectId: text('clarity_project_id'),
+  slotDuration: integer('slot_duration').default(60),   // minutes: 30, 45, 60
+  bufferTime: integer('buffer_time').default(0),         // minutes gap between slots
+  maxBookingsPerDay: integer('max_bookings_per_day').default(8),
+  advanceBookingDays: integer('advance_booking_days').default(14),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
@@ -145,4 +156,26 @@ export const rateLimits = sqliteTable('rate_limits', {
   key: text('key').primaryKey(),
   count: integer('count').notNull(),
   expiresAt: integer('expires_at').notNull(),
+});
+
+// Weekly recurring availability schedule
+// dayOfWeek: 0=Sunday, 1=Monday, ..., 6=Saturday
+export const availabilitySchedules = sqliteTable('availability_schedules', {
+  id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),
+  dayOfWeek: integer('day_of_week').notNull(), // 0-6
+  startTime: text('start_time').notNull(),     // "HH:MM" 24h format e.g. "10:00"
+  endTime: text('end_time').notNull(),         // "HH:MM" 24h format e.g. "17:00"
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
+
+// One-time date overrides (holidays, custom hours)
+export const availabilityOverrides = sqliteTable('availability_overrides', {
+  id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),
+  date: text('date').notNull().unique(),       // "YYYY-MM-DD"
+  isOff: integer('is_off', { mode: 'boolean' }).default(true), // true = holiday/off
+  startTime: text('start_time'),               // custom start if not off
+  endTime: text('end_time'),                   // custom end if not off
+  note: text('note'),                          // e.g. "Public Holiday"
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });

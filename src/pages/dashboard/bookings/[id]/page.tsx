@@ -113,10 +113,10 @@ export default function BookingDetailsPage() {
             to="/dashboard/bookings"
             className="p-2 hover:bg-white rounded-xl transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-secondary dark:text-white" />
+            <ArrowLeft className="w-5 h-5 text-gray-900" />
           </Link>
           <div>
-            <h1 className="font-display font-bold text-3xl text-secondary dark:text-white">
+            <h1 className="font-display font-bold text-3xl text-gray-900">
               Session Details
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">Booking #{booking.id}</p>
@@ -133,7 +133,7 @@ export default function BookingDetailsPage() {
 
           {/* Client Info */}
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="font-bold text-lg text-secondary dark:text-white mb-4">Client Information</h2>
+            <h2 className="font-bold text-lg text-gray-900 mb-4">Client Information</h2>
             <div className="grid md:grid-cols-2 gap-4">
               {[
                 { icon: User, label: 'Name', value: booking.name, color: 'bg-violet-50 text-violet-600' },
@@ -146,7 +146,7 @@ export default function BookingDetailsPage() {
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">{label}</div>
-                    <div className="font-medium text-secondary dark:text-white">{value}</div>
+                    <div className="font-medium text-gray-900">{value}</div>
                   </div>
                 </div>
               ))}
@@ -155,7 +155,7 @@ export default function BookingDetailsPage() {
 
           {/* Session Details */}
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="font-bold text-lg text-secondary dark:text-white mb-4">Session Details</h2>
+            <h2 className="font-bold text-lg text-gray-900 mb-4">Session Details</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-violet-50 text-violet-600">
@@ -163,7 +163,7 @@ export default function BookingDetailsPage() {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Date</div>
-                  <div className="font-medium text-secondary dark:text-white">
+                  <div className="font-medium text-gray-900">
                     {new Date(booking.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                   </div>
                 </div>
@@ -174,7 +174,7 @@ export default function BookingDetailsPage() {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Time Slot</div>
-                  <div className="font-medium text-secondary dark:text-white">{booking.timeSlot}</div>
+                  <div className="font-medium text-gray-900">{booking.timeSlot}</div>
                 </div>
               </div>
             </div>
@@ -210,7 +210,7 @@ export default function BookingDetailsPage() {
 
           {/* Timeline */}
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="font-bold text-lg text-secondary dark:text-white mb-4">Timeline</h2>
+            <h2 className="font-bold text-lg text-gray-900 mb-4">Timeline</h2>
             {events.length === 0 ? (
               <p className="text-gray-500 text-sm">No events yet.</p>
             ) : (
@@ -222,7 +222,7 @@ export default function BookingDetailsPage() {
                       {index < events.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 mt-1" />}
                     </div>
                     <div className="pb-4">
-                      <div className="font-medium text-secondary dark:text-white capitalize">
+                      <div className="font-medium text-gray-900 capitalize">
                         {event.toStatus ? `Status → ${event.toStatus}` : event.eventType.replace('_', ' ')}
                       </div>
                       <div className="text-xs text-gray-500">{new Date(event.createdAt).toLocaleString()}</div>
@@ -240,7 +240,7 @@ export default function BookingDetailsPage() {
           {/* Admin Actions */}
           {isAdmin && booking.status !== 'cancelled' && booking.status !== 'completed' && (
             <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-              <h2 className="font-bold text-lg text-secondary dark:text-white mb-4">Actions</h2>
+              <h2 className="font-bold text-lg text-gray-900 mb-4">Actions</h2>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Meet Link</Label>
@@ -295,7 +295,7 @@ export default function BookingDetailsPage() {
 
           {/* Booking Info */}
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="font-bold text-lg text-secondary dark:text-white mb-4">Booking Info</h2>
+            <h2 className="font-bold text-lg text-gray-900 mb-4">Booking Info</h2>
             <div className="space-y-3 text-sm">
               {[
                 { label: 'Booking ID', value: `#${booking.id}` },
@@ -304,7 +304,7 @@ export default function BookingDetailsPage() {
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between">
                   <span className="text-gray-500">{label}</span>
-                  <span className="font-medium text-secondary dark:text-white">{value}</span>
+                  <span className="font-medium text-gray-900">{value}</span>
                 </div>
               ))}
             </div>

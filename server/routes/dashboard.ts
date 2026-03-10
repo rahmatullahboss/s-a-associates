@@ -1,11 +1,13 @@
 import { Hono } from 'hono';
 import { eq, desc, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { bookings, documents, users, applications, bookingEvents, leads, studentProfiles } from '../db/schema.js';
+import { bookings, documents, users, applications, bookingEvents, leads, studentProfiles, siteSettings } from '../db/schema.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { sendBookingConfirmedEmail, sendBookingCancelledEmail } from '../lib/email.js';
 
 type Bindings = {
   DB: D1Database;
+  RESEND_API_KEY?: string;
 };
 
 type Variables = {
@@ -180,9 +182,22 @@ app.put('/bookings/:id', async (c) => {
       return c.json({ error: 'Forbidden' }, 403);
     }
     
+    // Get site settings for defaultMeetLink and companyName
+    const [settings] = await db(c.env.DB).select({
+      defaultMeetLink: siteSettings.defaultMeetLink,
+      companyName: siteSettings.companyName,
+    }).from(siteSettings).where(eq(siteSettings.id, 1));
+    const companyName = settings?.companyName || 'Tawakkul Education';
+
+    // Auto-fill meetLink from defaultMeetLink if admin left it blank and we're confirming
+    const resolvedMeetLink =
+      meetLink !== undefined && meetLink !== ''
+        ? meetLink
+        : (status === 'confirmed' ? (booking.meetingLink || settings?.defaultMeetLink || '') : (meetLink ?? ''));
+
     // Update booking
     const updateData: Record<string, string | Date> = { status, updatedAt: new Date() };
-    if (meetLink !== undefined) updateData.meetingLink = meetLink;
+    if (resolvedMeetLink !== undefined) updateData.meetingLink = resolvedMeetLink;
     if (agentNote !== undefined) updateData.agentNote = agentNote;
     await db(c.env.DB).update(bookings).set(updateData).where(eq(bookings.id, id));
     
@@ -195,7 +210,36 @@ app.put('/bookings/:id', async (c) => {
     
     const [updatedBooking] = await db(c.env.DB).select().from(bookings).where(eq(bookings.id, id));
     const events = await db(c.env.DB).select().from(bookingEvents).where(eq(bookingEvents.bookingId, id)).orderBy(desc(bookingEvents.createdAt));
-    
+
+    // Send email notifications (non-blocking)
+    if (status === 'confirmed') {
+      sendBookingConfirmedEmail(
+        { RESEND_API_KEY: c.env.RESEND_API_KEY, companyName },
+        {
+          toEmail: booking.email,
+          toName: booking.name,
+          date: booking.date,
+          timeSlot: booking.timeSlot,
+          bookingId: booking.id,
+          meetLink: resolvedMeetLink || '',
+          agentNote: agentNote ?? booking.agentNote ?? undefined,
+          companyName,
+        }
+      ).catch(err => console.error('[Email] confirmed email failed:', err));
+    } else if (status === 'cancelled') {
+      sendBookingCancelledEmail(
+        { RESEND_API_KEY: c.env.RESEND_API_KEY, companyName },
+        {
+          toEmail: booking.email,
+          toName: booking.name,
+          date: booking.date,
+          timeSlot: booking.timeSlot,
+          bookingId: booking.id,
+          companyName,
+        }
+      ).catch(err => console.error('[Email] cancelled email failed:', err));
+    }
+
     return c.json({ success: true, booking: updatedBooking, events });
   } catch (e: unknown) {
     console.error(e);
@@ -377,6 +421,39 @@ app.get('/students/:id', async (c) => {
   } catch (e: unknown) {
     console.error(e);
     return c.json({ error: 'Failed to fetch student' }, 500);
+  }
+});
+
+// DELETE /api/dashboard/students/:id
+app.delete('/students/:id', async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.role !== 'admin') {
+      return c.json({ error: 'Only admins can delete students' }, 403);
+    }
+
+    const studentId = parseInt(c.req.param('id'));
+    if (isNaN(studentId)) return c.json({ error: 'Invalid ID' }, 400);
+
+    // Don't allow deleting self
+    if (studentId === user.id) {
+      return c.json({ error: 'Cannot delete your own account' }, 400);
+    }
+
+    // Delete related records first
+    await db(c.env.DB).delete(bookingEvents).where(
+      sql` EXISTS (SELECT 1 FROM bookings WHERE bookings.id = booking_events.booking_id AND bookings.student_user_id = ${studentId})`
+    ).catch(() => {});
+    
+    await db(c.env.DB).delete(documents).where(eq(documents.userId, studentId));
+    await db(c.env.DB).delete(bookings).where(eq(bookings.studentUserId, studentId));
+    await db(c.env.DB).delete(studentProfiles).where(eq(studentProfiles.userId, studentId));
+    await db(c.env.DB).delete(users).where(eq(users.id, studentId));
+
+    return c.json({ success: true });
+  } catch (e: unknown) {
+    console.error(e);
+    return c.json({ error: 'Failed to delete student' }, 500);
   }
 });
 

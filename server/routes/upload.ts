@@ -20,6 +20,16 @@ upload.use('*', authMiddleware);
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
+// #11 — Allowlist of permitted MIME types for document uploads
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
+
 function sanitizeFileName(fileName: string): string {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
@@ -39,6 +49,11 @@ upload.post('/', async (c) => {
     
     if (file.size > MAX_FILE_SIZE_BYTES) {
       return c.json({ error: 'File too large (max 10MB)' }, 400);
+    }
+
+    // #11 — Validate MIME type against allowlist
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      return c.json({ error: 'File type not allowed. Permitted: PDF, JPG, PNG, WebP, DOC, DOCX' }, 400);
     }
 
     const safeFileName = sanitizeFileName(file.name);
@@ -79,21 +94,27 @@ upload.post('/review', async (c) => {
       return c.json({ error: 'Forbidden' }, 403);
     }
 
-    const { documentId, status, reviewNote } = await c.req.json();
+    const body = await c.req.json() as { documentId?: unknown; status?: unknown; reviewNote?: unknown };
+    const { documentId, status, reviewNote } = body;
 
-    if (!documentId || !status) {
-      return c.json({ error: 'Missing documentId or status' }, 400);
+    // #4 — Validate status against allowlist
+    const VALID_DOC_STATUSES = ['Pending', 'Verified', 'Rejected'];
+    if (!documentId || typeof documentId !== 'number') {
+      return c.json({ error: 'Missing or invalid documentId' }, 400);
+    }
+    if (!status || !VALID_DOC_STATUSES.includes(status as string)) {
+      return c.json({ error: `Invalid status. Must be one of: ${VALID_DOC_STATUSES.join(', ')}` }, 400);
     }
 
     await db(c.env.DB)
       .update(documents)
       .set({
-        status,
+        status: status as string,
         reviewedByUserId: user.id,
         reviewedAt: new Date(),
-        reviewNote: reviewNote || null,
+        reviewNote: (reviewNote as string) || null,
       })
-      .where(eq(documents.id, documentId));
+      .where(eq(documents.id, documentId as number));
 
     return c.json({ success: true });
   } catch (error) {

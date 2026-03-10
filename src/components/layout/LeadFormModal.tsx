@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import pixel from "@/lib/pixel";
 
 export function LeadFormModal({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -51,13 +52,25 @@ export function LeadFormModal({ children }: { children: React.ReactNode }) {
       budget: formData.get("budget") as string,
       countryInterest: formData.get("country") as string,
     };
-    console.log(data);
 
     try {
       await apiFetch("/api/leads", {
         method: "POST",
         body: JSON.stringify({ ...data, source: "website_lead" }),
       });
+
+      // 🎯 Fire Lead event — both browser Pixel + server CAPI (awaited)
+      await pixel.trackWithCAPI('Lead', {
+        content_name: 'Free Consultation Request',
+        content_category: data.program,
+        currency: 'BDT',
+      }, {
+        email: data.email,
+        phone: data.phone,
+        firstName: data.name.split(' ')[0],
+        lastName: data.name.split(' ').slice(1).join(' ') || undefined,
+      });
+
       setSubmitted(true);
     } catch (error) {
       console.error(error);

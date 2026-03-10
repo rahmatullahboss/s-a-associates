@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, Users, Search, ChevronRight, Mail, Phone, Globe } from 'lucide-react';
+import { Loader2, Users, Search, ChevronRight, Mail, Phone, Globe, Trash2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
 interface Student {
@@ -19,6 +19,7 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [deleting, setDeleting] = useState<number | null>(null);
 
   useEffect(() => {
     apiFetch<{ authenticated: boolean; user: { role: string } }>('/api/auth/me').then(auth => {
@@ -30,6 +31,25 @@ export default function StudentsPage() {
     }).catch(console.error)
       .finally(() => setLoading(false));
   }, [navigate]);
+
+  const handleDelete = async (student: Student, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!confirm(`Are you sure you want to delete "${student.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(student.id);
+    try {
+      await apiFetch(`/api/dashboard/students/${student.id}`, { method: 'DELETE' });
+      setStudents(students.filter(s => s.id !== student.id));
+    } catch (error) {
+      alert('Failed to delete student');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const filtered = students.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -80,12 +100,11 @@ export default function StudentsPage() {
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filtered.map(student => (
-              <Link
+              <div
                 key={student.id}
-                to={`/dashboard/students/${student.id}`}
                 className="flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
               >
-                <div className="flex items-center gap-4">
+                <Link to={`/dashboard/students/${student.id}`} className="flex items-center gap-4 flex-1">
                   <div className="w-11 h-11 rounded-2xl bg-secondary dark:bg-gray-700 flex items-center justify-center text-white font-bold text-lg shrink-0">
                     {student.name.charAt(0).toUpperCase()}
                   </div>
@@ -97,7 +116,7 @@ export default function StudentsPage() {
                       {student.countryInterest && <span className="flex items-center gap-1"><Globe className="w-3 h-3" />{student.countryInterest}</span>}
                     </div>
                   </div>
-                </div>
+                </Link>
                 <div className="flex items-center gap-4">
                   {student.profileCompletion !== null && (
                     <div className="hidden sm:flex flex-col items-end gap-1">
@@ -113,9 +132,23 @@ export default function StudentsPage() {
                       </div>
                     </div>
                   )}
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-900 transition-colors" />
+                  <button
+                    onClick={(e) => handleDelete(student, e)}
+                    disabled={deleting === student.id}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    title="Delete student"
+                  >
+                    {deleting === student.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
+                  <Link to={`/dashboard/students/${student.id}`}>
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-900 transition-colors" />
+                  </Link>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

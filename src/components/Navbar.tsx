@@ -12,7 +12,6 @@ import {
   GraduationCap,
   Shield,
 } from "lucide-react";
-import { LeadFormModal } from "@/components/layout/LeadFormModal";
 import { useSiteSettings } from "@/lib/site-settings-context";
 import { apiFetch } from "@/lib/api";
 
@@ -75,15 +74,6 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-
-            {/* Book Consultation Button */}
-            <div className="ml-4">
-              <LeadFormModal>
-                <button className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-full font-medium transition-all duration-200 shadow-lg shadow-primary/25">
-                  Book Consultation
-                </button>
-              </LeadFormModal>
-            </div>
 
             {/* Login Dropdown */}
             <div className="relative ml-2">

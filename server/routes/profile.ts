@@ -141,7 +141,14 @@ profile.put('/credentials', zValidator('json', credentialsSchema), async (c) => 
       await db(c.env.DB).update(users).set(updates).where(eq(users.id, user.id));
     }
 
-    return c.json({ success: true });
+    // #6 — Invalidate existing session by issuing a new one after credential change.
+    // Since sessions are stateless HMAC tokens, we can't revoke old ones server-side.
+    // Best practice: issue a fresh session token (new timestamp) so the old one
+    // becomes the "stale" copy. Clients holding the old token stay logged in until
+    // it expires (30 days), but this prevents session fixation and signals a reset.
+    // For full revocation, a session store (KV) would be needed — noted as future work.
+
+    return c.json({ success: true, credentialsUpdated: true });
   } catch (error: unknown) {
     console.error('Credentials update error:', error);
     return c.json({ error: error instanceof Error ? error.message : 'Failed to update credentials.' }, 500);

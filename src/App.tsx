@@ -1,7 +1,9 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import RootLayout from './pages/layout';
 import { Loader2 } from 'lucide-react';
+import pixel, { trackGAPageView } from '@/lib/pixel';
+import { useSiteSettings } from '@/lib/site-settings-context';
 
 // Public Pages
 const HomePage = lazy(() => import('./pages/page'));
@@ -39,10 +41,32 @@ function PageLoader() {
   );
 }
 
+/** Fires Pixel PageView + GA4 page_view on every public route navigation.
+ *  Skips /dashboard/* routes to avoid polluting Meta audiences with admin behaviour.
+ *  Per GA4 SPA docs: manual page_view required since send_page_view: false on init.
+ */
+function PageViewTracker() {
+  const location = useLocation();
+  const settings = useSiteSettings();
+
+  useEffect(() => {
+    if (!location.pathname.startsWith('/dashboard')) {
+      // Facebook Pixel PageView
+      pixel.track('PageView');
+      // GA4 manual page_view (SPA pattern per Google docs)
+      if (settings.googleAnalyticsId) {
+        trackGAPageView(settings.googleAnalyticsId, location.pathname + location.search);
+      }
+    }
+  }, [location.pathname, location.search, settings.googleAnalyticsId]);
+  return null;
+}
+
 function App() {
   return (
     <Router>
       <RootLayout>
+        <PageViewTracker />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Public Routes */}

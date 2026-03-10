@@ -4,6 +4,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { DEFAULT_SITE_SETTINGS, type SiteSettings } from "./site-settings.types";
 import { API_BASE } from "./api";
+import { initPixelScript, initGoogleAnalytics, initClarity } from "./pixel";
 
 const SiteSettingsContext = createContext<SiteSettings>(DEFAULT_SITE_SETTINGS);
 
@@ -20,6 +21,17 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
           const raw = data as Record<string, unknown>;
           const merged = { ...DEFAULT_SITE_SETTINGS, ...(raw.settings as Partial<SiteSettings> ?? raw) };
           setSettings(merged as SiteSettings);
+
+          // Initialize tracking scripts once settings are loaded
+          if (merged.facebookPixelId) {
+            initPixelScript(merged.facebookPixelId);
+          }
+          if (merged.googleAnalyticsId) {
+            initGoogleAnalytics(merged.googleAnalyticsId);
+          }
+          if (merged.clarityProjectId) {
+            initClarity(merged.clarityProjectId);
+          }
         }
       })
       .catch(() => {});

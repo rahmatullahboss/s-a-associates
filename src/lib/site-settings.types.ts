@@ -43,6 +43,10 @@ export type SiteSettings = {
 
   // Booking
   defaultMeetLink?: string;
+  slotDuration?: number;       // minutes: 30, 45, 60, 90
+  bufferTime?: number;         // minutes between sessions: 0, 15, 30
+  maxBookingsPerDay?: number;  // e.g. 8
+  advanceBookingDays?: number; // how far ahead students can book, e.g. 14
 
   // University Logos (JSON)
   universityLogos?: Array<{
@@ -50,6 +54,13 @@ export type SiteSettings = {
     url: string;
     name?: string;
   }>;
+
+  // Tracking & Analytics
+  facebookPixelId?: string;       // e.g. "1234567890"
+  metaAccessToken?: string;       // CAPI Access Token (server-side)
+  metaTestEventCode?: string;     // e.g. "TEST12345" — only for dev/testing
+  googleAnalyticsId?: string;     // e.g. "G-XXXXXXXXXX"
+  clarityProjectId?: string;      // e.g. "abc123xyz" — Microsoft Clarity
 };
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {

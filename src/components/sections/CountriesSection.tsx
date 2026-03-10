@@ -50,6 +50,15 @@ const countries = [
     color: "from-indigo-600 to-indigo-900",
     badge: "bg-indigo-100 text-indigo-900",
   },
+  {
+    name: "Ireland",
+    flag: "🇮🇪",
+    highlight: "Emerging Hub",
+    tagline: "Europe's Fast-Growing Study Destination",
+    details: ["Home to top-ranked universities like UCD & Trinity", "EU & global tech company headquarters", "Post-study stay-back visa (2 years)", "English-speaking, welcoming culture"],
+    color: "from-green-600 to-green-800",
+    badge: "bg-green-100 text-green-900",
+  },
 ];
 
 export function CountriesSection() {
@@ -65,7 +74,7 @@ export function CountriesSection() {
             Where Do You Want to <span className="text-secondary italic">Study?</span>
           </h2>
           <p className="mt-4 text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
-            We provide expert guidance for students applying to top institutions across 5 countries.
+            We provide expert guidance for students applying to top institutions worldwide.
           </p>
         </div>
 
