@@ -7,11 +7,22 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
+    // run_worker_first: only API routes hit the Worker — all static assets bypass it entirely.
+    // This minimises Worker invocations: /assets/*, /favicon*, /images/* served directly from CF edge.
     "run_worker_first": ["/api/*"]
   },
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
+  // Smart Placement: CF automatically places Worker closest to D1/R2 bindings (reduces DB latency)
+  "placement": { "mode": "smart" },
+  "vars": {
+    // SESSION_SECRET is set as a Cloudflare Secret (not stored here)
+    "R2_PUBLIC_URL": "https://pub-your-r2-url.com",
+    "RESEND_API_KEY": "",
+    // Google OAuth - set as Cloudflare Secrets:
+    // wrangler secret put GOOGLE_CLIENT_ID
+    // wrangler secret put GOOGLE_CLIENT_SECRET
+    // GOOGLE_REDIRECT_URI should be your production callback URL
+    "GOOGLE_REDIRECT_URI": "https://your-domain.com/api/auth/google/callback"
+  },
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",
@@ -32,9 +43,9 @@
       "migrations_dir": "drizzle"
     }
   ],
-  // "ai": {
-  //   "binding": "AI"
-  // },
+  "ai": {
+    "binding": "AI"
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
