@@ -25,6 +25,7 @@ type Bindings = {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   GOOGLE_REDIRECT_URI: string;
+  GOOGLE_REDIRECT_URIS: string;
 };
 
 const auth = new Hono<{ Bindings: Bindings }>();
@@ -189,7 +190,21 @@ auth.get('/google', async (c) => {
   try {
     const clientId = c.env.GOOGLE_CLIENT_ID;
     const clientSecret = c.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = c.env.GOOGLE_REDIRECT_URI;
+    
+    // Get the request origin to determine correct redirect URI
+    const origin = c.req.header('Origin') || c.req.header('Host') || '';
+    let redirectUri = c.env.GOOGLE_REDIRECT_URI;
+    
+    // Check for multiple redirect URIs and match the origin
+    if (c.env.GOOGLE_REDIRECT_URIS) {
+      const uris = c.env.GOOGLE_REDIRECT_URIS.split(',');
+      for (const uri of uris) {
+        if (origin.includes(new URL(uri).hostname)) {
+          redirectUri = uri;
+          break;
+        }
+      }
+    }
 
     // Check if Google OAuth is configured
     if (!clientId || !clientSecret || !redirectUri) {
@@ -271,7 +286,21 @@ auth.get('/google/callback', async (c) => {
     // Exchange code for tokens
     const clientId = c.env.GOOGLE_CLIENT_ID;
     const clientSecret = c.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = c.env.GOOGLE_REDIRECT_URI;
+    
+    // Get the request origin to determine correct redirect URI
+    const origin = c.req.header('Origin') || c.req.header('Host') || '';
+    let redirectUri = c.env.GOOGLE_REDIRECT_URI;
+    
+    // Check for multiple redirect URIs and match the origin
+    if (c.env.GOOGLE_REDIRECT_URIS) {
+      const uris = c.env.GOOGLE_REDIRECT_URIS.split(',');
+      for (const uri of uris) {
+        if (origin.includes(new URL(uri).hostname)) {
+          redirectUri = uri;
+          break;
+        }
+      }
+    }
 
     if (!clientId || !clientSecret || !redirectUri) {
       return c.redirect('/student/login?error=Google login not configured');

@@ -7,3 +7,4 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # Callback URL for local development
 GOOGLE_REDIRECT_URI=http://127.0.0.1:8787/api/auth/google/callback
+GOOGLE_REDIRECT_URIS=http://127.0.0.1:8787/api/auth/google/callback
