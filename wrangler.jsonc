@@ -21,7 +21,7 @@
     // wrangler secret put GOOGLE_CLIENT_ID
     // wrangler secret put GOOGLE_CLIENT_SECRET
     // GOOGLE_REDIRECT_URI should be your production callback URL
-    "GOOGLE_REDIRECT_URI": "https://simplyafford.com/api/auth/google/callback"
+    "GOOGLE_REDIRECT_URI": "https://www.simplenaffordable.com/api/auth/google/callback"
   },
   // "kv_namespaces": [
   //   {
